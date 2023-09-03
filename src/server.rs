@@ -151,7 +151,7 @@ pub async fn create_tcp_connection(
             .into(),
             ..Default::default()
         });
-        timeout(CONNECT_TIMEOUT, stream.send(&msg_out)).await??;
+        timeout(CONNECT_TIMEOUT, stream.tcp_send_msg(&msg_out)).await??;
         match timeout(CONNECT_TIMEOUT, stream.next()).await? {
             Some(res) => {
                 let bytes = res?;
@@ -248,7 +248,7 @@ async fn create_relay_connection_(
         uuid,
         ..Default::default()
     });
-    stream.send(&msg_out).await?;
+    stream.tcp_send_msg(&msg_out).await?;
     create_tcp_connection(server, stream, peer_addr, secure).await?;
     Ok(())
 }

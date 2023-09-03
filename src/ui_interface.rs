@@ -184,25 +184,25 @@ pub fn set_kb_layout_type(kb_layout_type: String) {
 
 #[inline]
 pub fn peer_has_password(id: String) -> bool {
-    !PeerConfig::load(&id).password.is_empty()
+    !PeerConfig::load_peerconfig(&id).password.is_empty()
 }
 
 #[inline]
 pub fn forget_password(id: String) {
-    let mut c = PeerConfig::load(&id);
+    let mut c = PeerConfig::load_peerconfig(&id);
     c.password.clear();
     c.store(&id);
 }
 
 #[inline]
 pub fn get_peer_option(id: String, name: String) -> String {
-    let c = PeerConfig::load(&id);
+    let c = PeerConfig::load_peerconfig(&id);
     c.options.get(&name).unwrap_or(&"".to_owned()).to_owned()
 }
 
 #[inline]
 pub fn set_peer_option(id: String, name: String, value: String) {
-    let mut c = PeerConfig::load(&id);
+    let mut c = PeerConfig::load_peerconfig(&id);
     if value.is_empty() {
         c.options.remove(&name);
     } else {
@@ -482,7 +482,7 @@ pub fn set_permanent_password(password: String) {
 
 #[inline]
 pub fn get_peer(id: String) -> PeerConfig {
-    PeerConfig::load(&id)
+    PeerConfig::load_peerconfig(&id)
 }
 
 #[inline]
@@ -1104,7 +1104,7 @@ async fn check_id(
             ..Default::default()
         });
         let mut ok = false;
-        if socket.send(&msg_out).await.is_ok() {
+        if socket.tcp_send_msg(&msg_out).await.is_ok() {
             if let Some(msg_in) =
                 crate::common::get_next_nonkeyexchange_msg(&mut socket, None).await
             {

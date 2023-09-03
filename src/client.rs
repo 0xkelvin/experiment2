@@ -306,7 +306,7 @@ impl Client {
                 conn_type: conn_type.into(),
                 ..Default::default()
             });
-            socket.send(&msg_out).await?;
+            socket.tcp_send_msg(&msg_out).await?;
             if let Some(msg_in) =
                 crate::get_next_nonkeyexchange_msg(&mut socket, Some(i * 6000)).await
             {
@@ -417,7 +417,7 @@ impl Client {
         conn_type: ConnType,
         interface: impl Interface,
     ) -> ResultType<(Stream, bool, Option<Vec<u8>>)> {
-        let direct_failures = PeerConfig::load(peer_id).direct_failures;
+        let direct_failures = PeerConfig::load_peerconfig(peer_id).direct_failures;
         let mut connect_timeout = 0;
         const MIN: u64 = 1000;
         if is_local || peer_nat_type == NatType::SYMMETRIC {
@@ -481,7 +481,7 @@ impl Client {
             }
         }
         if !relay_server.is_empty() && (direct_failures == 0) != direct {
-            let mut config = PeerConfig::load(peer_id);
+            let mut config = PeerConfig::load_peerconfig(peer_id);
             config.direct_failures = if direct { 0 } else { 1 };
             log::info!("direct_failures updated to {}", config.direct_failures);
             config.store(peer_id);
@@ -521,7 +521,7 @@ impl Client {
             Some(v) => v,
             None => {
                 // send an empty message out in case server is setting up secure and waiting for first message
-                conn.send(&Message::new()).await?;
+                conn.tcp_send_msg(&Message::new()).await?;
                 return Ok(option_pk);
             }
         };
@@ -540,26 +540,26 @@ impl Client {
                                     symmetric_value,
                                     ..Default::default()
                                 });
-                                timeout(CONNECT_TIMEOUT, conn.send(&msg_out)).await??;
+                                timeout(CONNECT_TIMEOUT, conn.tcp_send_msg(&msg_out)).await??;
                                 conn.set_key(key);
                             } else {
                                 log::error!("Handshake failed: sign failure");
-                                conn.send(&Message::new()).await?;
+                                conn.tcp_send_msg(&Message::new()).await?;
                             }
                         } else {
                             // fall back to non-secure connection in case pk mismatch
                             log::info!("pk mismatch, fall back to non-secure");
                             let mut msg_out = Message::new();
                             msg_out.set_public_key(PublicKey::new());
-                            conn.send(&msg_out).await?;
+                            conn.tcp_send_msg(&msg_out).await?;
                         }
                     } else {
                         log::error!("Handshake failed: invalid message type");
-                        conn.send(&Message::new()).await?;
+                        conn.tcp_send_msg(&Message::new()).await?;
                     }
                 } else {
                     log::error!("Handshake failed: invalid message format");
-                    conn.send(&Message::new()).await?;
+                    conn.tcp_send_msg(&Message::new()).await?;
                 }
             }
             None => {
@@ -613,7 +613,7 @@ impl Client {
                 secure,
                 ..Default::default()
             });
-            socket.send(&msg_out).await?;
+            socket.tcp_send_msg(&msg_out).await?;
 
             if let Some(msg_in) =
                 crate::get_next_nonkeyexchange_msg(&mut socket, Some(CONNECT_TIMEOUT)).await
@@ -656,7 +656,7 @@ impl Client {
             conn_type: conn_type.into(),
             ..Default::default()
         });
-        conn.send(&msg_out).await?;
+        conn.tcp_send_msg(&msg_out).await?;
         Ok(conn)
     }
 
@@ -1087,7 +1087,7 @@ impl Deref for LoginConfigHandler {
 /// * `id` - id of peer
 #[inline]
 pub fn load_config(id: &str) -> PeerConfig {
-    PeerConfig::load(id)
+    PeerConfig::load_peerconfig(id)
 }
 
 impl LoginConfigHandler {
@@ -1361,7 +1361,7 @@ impl LoginConfigHandler {
             msg.image_quality = q.into();
             n += 1;
         } else if q == "custom" {
-            let config = PeerConfig::load(&self.id);
+            let config = PeerConfig::load_peerconfig(&self.id);
             let quality = if config.custom_image_quality.is_empty() {
                 50
             } else {
@@ -1881,7 +1881,7 @@ pub async fn handle_test_delay(t: TestDelay, peer: &mut Stream) {
     if !t.from_client {
         let mut msg_out = Message::new();
         msg_out.set_test_delay(t);
-        allow_err!(peer.send(&msg_out).await);
+        allow_err!(peer.tcp_send_msg(&msg_out).await);
     }
 }
 
@@ -2203,7 +2203,7 @@ async fn send_login(
         .read()
         .unwrap()
         .create_login_msg(os_username, os_password, password);
-    allow_err!(peer.send(&msg_out).await);
+    allow_err!(peer.tcp_send_msg(&msg_out).await);
 }
 
 /// Handle login request made from ui.
@@ -2264,7 +2264,7 @@ async fn send_switch_login_request(
         ),
         ..Default::default()
     });
-    allow_err!(peer.send(&msg_out).await);
+    allow_err!(peer.tcp_send_msg(&msg_out).await);
 }
 
 /// Interface for client to send data and commands.
@@ -2580,7 +2580,7 @@ async fn secure_punch_connection(conn: &mut FramedStream, key: &str) -> ResultTy
                             keys: vec![asymmetric_value, symmetric_value],
                             ..Default::default()
                         });
-                        timeout(CONNECT_TIMEOUT, conn.send(&msg_out)).await??;
+                        timeout(CONNECT_TIMEOUT, conn.tcp_send_msg(&msg_out)).await??;
                         conn.set_key(key);
                         log::info!("Token secured");
                     }

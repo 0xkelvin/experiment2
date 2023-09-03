@@ -514,7 +514,7 @@ impl TransferJob {
             ..Default::default()
         });
         msg.set_file_response(resp);
-        stream.send(&msg).await?;
+        stream.tcp_send_msg(&msg).await?;
         log::info!(
             "id: {}, file_num:{}, digest message is sent. waiting for confirm. msg: {:?}",
             self.id,
@@ -741,11 +741,11 @@ pub async fn handle_read_jobs(
         match job.read(stream).await {
             Err(err) => {
                 stream
-                    .send(&new_error(job.id(), err, job.file_num()))
+                    .tcp_send_msg(&new_error(job.id(), err, job.file_num()))
                     .await?;
             }
             Ok(Some(block)) => {
-                stream.send(&new_block(block)).await?;
+                stream.tcp_send_msg(&new_block(block)).await?;
             }
             Ok(None) => {
                 if job.job_completed() {
@@ -753,10 +753,10 @@ pub async fn handle_read_jobs(
                     let err = job.job_error();
                     if err.is_some() {
                         stream
-                            .send(&new_error(job.id(), err.unwrap(), job.file_num()))
+                            .tcp_send_msg(&new_error(job.id(), err.unwrap(), job.file_num()))
                             .await?;
                     } else {
-                        stream.send(&new_done(job.id(), job.file_num())).await?;
+                        stream.tcp_send_msg(&new_done(job.id(), job.file_num())).await?;
                     }
                 } else {
                     // waiting confirmation.

@@ -90,7 +90,7 @@ impl FramedSocket {
     }
 
     #[inline]
-    pub async fn send(
+    pub async fn send_uds_msg(
         &mut self,
         msg: &impl Message,
         addr: impl IntoTargetAddr<'_>,

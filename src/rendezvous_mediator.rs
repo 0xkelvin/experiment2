@@ -326,7 +326,7 @@ impl RendezvousMediator {
             rr.set_id(Config::get_id());
         }
         msg_out.set_relay_response(rr);
-        socket.send(&msg_out).await?;
+        socket.tcp_send_msg(&msg_out).await?;
         crate::create_relay_connection(
             server,
             relay_server,
@@ -432,7 +432,7 @@ impl RendezvousMediator {
             pk: pk.into(),
             ..Default::default()
         });
-        socket.send(&msg_out, self.addr.to_owned()).await?;
+        socket.send_uds_msg(&msg_out, self.addr.to_owned()).await?;
         Ok(())
     }
 
@@ -478,7 +478,7 @@ impl RendezvousMediator {
             serial,
             ..Default::default()
         });
-        socket.send(&msg_out, self.addr.to_owned()).await?;
+        socket.send_uds_msg(&msg_out, self.addr.to_owned()).await?;
         Ok(())
     }
 
@@ -638,7 +638,7 @@ async fn query_online_states_(
         }
 
         let mut socket = create_online_stream().await?;
-        socket.send(&msg_out).await?;
+        socket.tcp_send_msg(&msg_out).await?;
         if let Some(msg_in) = crate::common::get_next_nonkeyexchange_msg(&mut socket, None).await {
             match msg_in.union {
                 Some(rendezvous_message::Union::OnlineResponse(online_response)) => {

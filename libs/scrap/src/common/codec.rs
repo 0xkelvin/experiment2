@@ -444,7 +444,7 @@ impl Decoder {
     }
 
     fn codec_preference(id: &str) -> PreferCodec {
-        let codec = PeerConfig::load(id)
+        let codec = PeerConfig::load_peerconfig(id)
             .options
             .get("codec-preference")
             .map_or("".to_owned(), |c| c.to_owned());

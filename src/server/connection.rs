@@ -544,7 +544,7 @@ impl Connection {
                     if !conn.video_ack_required {
                         video_service::notify_video_frame_fetched(id, Some(instant.into()));
                     }
-                    if let Err(err) = conn.stream.send(&value as &Message).await {
+                    if let Err(err) = conn.stream.tcp_send_msg(&value as &Message).await {
                         conn.on_close(&err.to_string(), false).await;
                         break;
                     }
@@ -575,7 +575,7 @@ impl Connection {
                         }
                         _ => {}
                     }
-                    if let Err(err) = conn.stream.send(msg).await {
+                    if let Err(err) = conn.stream.tcp_send_msg(msg).await {
                         conn.on_close(&err.to_string(), false).await;
                         break;
                     }
@@ -2230,7 +2230,7 @@ impl Connection {
 
     #[inline]
     async fn send(&mut self, msg: Message) {
-        allow_err!(self.stream.send(&msg).await);
+        allow_err!(self.stream.tcp_send_msg(&msg).await);
     }
 
     pub fn alive_conns() -> Vec<i32> {

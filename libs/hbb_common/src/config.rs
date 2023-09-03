@@ -934,7 +934,7 @@ impl Config {
 const PEERS: &str = "peers";
 
 impl PeerConfig {
-    pub fn load(id: &str) -> PeerConfig {
+    pub fn load_peerconfig(id: &str) -> PeerConfig {
         let _lock = CONFIG.read().unwrap();
         match confy::load_path(Self::path(id)) {
             Ok(config) => {
@@ -1001,7 +1001,7 @@ impl PeerConfig {
         Config::with_extension(Config::path(path))
     }
 
-    pub fn peers() -> Vec<(String, SystemTime, PeerConfig)> {
+    pub fn get_peers_config() -> Vec<(String, SystemTime, PeerConfig)> {
         if let Ok(peers) = Config::path(PEERS).read_dir() {
             if let Ok(peers) = peers
                 .map(|res| res.map(|e| e.path()))
@@ -1029,7 +1029,7 @@ impl PeerConfig {
                             id
                         };
 
-                        let c = PeerConfig::load(&id_decoded_string);
+                        let c = PeerConfig::load_peerconfig(&id_decoded_string);
                         if c.info.platform.is_empty() {
                             fs::remove_file(p).ok();
                         }

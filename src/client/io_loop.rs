@@ -393,7 +393,7 @@ impl<T: InvokeUiSession> Remote<T> {
                 misc.set_close_reason("".to_owned());
                 let mut msg = Message::new();
                 msg.set_misc(misc);
-                allow_err!(peer.send(&msg).await);
+                allow_err!(peer.tcp_send_msg(&msg).await);
                 return false;
             }
             Data::Login((os_username, os_password, password, remember)) => {
@@ -406,7 +406,7 @@ impl<T: InvokeUiSession> Remote<T> {
                 self.check_clipboard_file_context();
             }
             Data::Message(msg) => {
-                allow_err!(peer.send(&msg).await);
+                allow_err!(peer.tcp_send_msg(&msg).await);
             }
             Data::SendFiles((id, path, to, file_num, include_hidden, is_remote)) => {
                 log::info!("send files, is remote {}", is_remote);
@@ -424,7 +424,7 @@ impl<T: InvokeUiSession> Remote<T> {
                         od,
                     ));
                     allow_err!(
-                        peer.send(&fs::new_send(id, path, file_num, include_hidden))
+                        peer.tcp_send_msg(&fs::new_send(id, path, file_num, include_hidden))
                             .await
                     );
                 } else {
@@ -466,7 +466,7 @@ impl<T: InvokeUiSession> Remote<T> {
                             }
                             self.read_jobs.push(job);
                             self.timer = time::interval(MILLI1);
-                            allow_err!(peer.send(&fs::new_receive(id, to, file_num, files)).await);
+                            allow_err!(peer.tcp_send_msg(&fs::new_receive(id, to, file_num, files)).await);
                         }
                     }
                 }
@@ -532,7 +532,7 @@ impl<T: InvokeUiSession> Remote<T> {
                     if let Some(job) = get_job(id, &mut self.write_jobs) {
                         job.is_last_job = false;
                         allow_err!(
-                            peer.send(&fs::new_send(
+                            peer.tcp_send_msg(&fs::new_send(
                                 id,
                                 job.remote.clone(),
                                 job.file_num,
@@ -545,7 +545,7 @@ impl<T: InvokeUiSession> Remote<T> {
                     if let Some(job) = get_job(id, &mut self.read_jobs) {
                         job.is_last_job = false;
                         allow_err!(
-                            peer.send(&fs::new_receive(
+                            peer.tcp_send_msg(&fs::new_receive(
                                 id,
                                 job.path.to_string_lossy().to_string(),
                                 job.file_num,
@@ -610,7 +610,7 @@ impl<T: InvokeUiSession> Remote<T> {
                         job.confirm(&req);
                         file_action.set_send_confirm(req);
                         msg.set_file_action(file_action);
-                        allow_err!(peer.send(&msg).await);
+                        allow_err!(peer.tcp_send_msg(&msg).await);
                     }
                 }
             }
@@ -626,7 +626,7 @@ impl<T: InvokeUiSession> Remote<T> {
                         ..Default::default()
                     });
                     msg_out.set_file_action(file_action);
-                    allow_err!(peer.send(&msg_out).await);
+                    allow_err!(peer.tcp_send_msg(&msg_out).await);
                     self.remove_jobs
                         .insert(id, RemoveJob::new(Vec::new(), path, sep, is_remote));
                 } else {
@@ -656,7 +656,7 @@ impl<T: InvokeUiSession> Remote<T> {
                     ..Default::default()
                 });
                 msg_out.set_file_action(file_action);
-                allow_err!(peer.send(&msg_out).await);
+                allow_err!(peer.tcp_send_msg(&msg_out).await);
                 if let Some(job) = fs::get_job(id, &mut self.write_jobs) {
                     job.remove_download_file();
                     fs::remove_job(id, &mut self.write_jobs);
@@ -674,7 +674,7 @@ impl<T: InvokeUiSession> Remote<T> {
                     ..Default::default()
                 });
                 msg_out.set_file_action(file_action);
-                allow_err!(peer.send(&msg_out).await);
+                allow_err!(peer.tcp_send_msg(&msg_out).await);
             }
             Data::RemoveFile((id, path, file_num, is_remote)) => {
                 if is_remote {
@@ -687,7 +687,7 @@ impl<T: InvokeUiSession> Remote<T> {
                         ..Default::default()
                     });
                     msg_out.set_file_action(file_action);
-                    allow_err!(peer.send(&msg_out).await);
+                    allow_err!(peer.tcp_send_msg(&msg_out).await);
                 } else {
                     match fs::remove_file(&path) {
                         Err(err) => {
@@ -709,7 +709,7 @@ impl<T: InvokeUiSession> Remote<T> {
                         ..Default::default()
                     });
                     msg_out.set_file_action(file_action);
-                    allow_err!(peer.send(&msg_out).await);
+                    allow_err!(peer.tcp_send_msg(&msg_out).await);
                 } else {
                     match fs::create_dir(&path) {
                         Err(err) => {
@@ -733,7 +733,7 @@ impl<T: InvokeUiSession> Remote<T> {
                 misc.set_elevation_request(request);
                 let mut msg = Message::new();
                 msg.set_misc(misc);
-                allow_err!(peer.send(&msg).await);
+                allow_err!(peer.tcp_send_msg(&msg).await);
                 self.elevation_requested = true;
             }
             Data::ElevateWithLogon(username, password) => {
@@ -747,7 +747,7 @@ impl<T: InvokeUiSession> Remote<T> {
                 misc.set_elevation_request(request);
                 let mut msg = Message::new();
                 msg.set_misc(misc);
-                allow_err!(peer.send(&msg).await);
+                allow_err!(peer.tcp_send_msg(&msg).await);
                 self.elevation_requested = true;
             }
             Data::NewVoiceCall => {
@@ -757,7 +757,7 @@ impl<T: InvokeUiSession> Remote<T> {
                     NonZeroI64::new(msg.voice_call_request().req_timestamp)
                         .unwrap_or(NonZeroI64::new(get_time()).unwrap()),
                 );
-                allow_err!(peer.send(&msg).await);
+                allow_err!(peer.tcp_send_msg(&msg).await);
                 self.handler.on_voice_call_waiting();
             }
             Data::CloseVoiceCall => {
@@ -765,7 +765,7 @@ impl<T: InvokeUiSession> Remote<T> {
                 let msg = new_voice_call_request(false);
                 self.handler
                     .on_voice_call_closed("Closed manually by the peer");
-                allow_err!(peer.send(&msg).await);
+                allow_err!(peer.tcp_send_msg(&msg).await);
             }
             _ => {}
         }
@@ -849,7 +849,7 @@ impl<T: InvokeUiSession> Remote<T> {
             misc.set_option(opts);
             let mut msg_out = Message::new();
             msg_out.set_misc(misc);
-            allow_err!(peer.send(&msg_out).await);
+            allow_err!(peer.tcp_send_msg(&msg_out).await);
         }
     }
 
@@ -1067,7 +1067,7 @@ impl<T: InvokeUiSession> Remote<T> {
                                             };
                                             job.confirm(&req);
                                             let msg = new_send_confirm(req);
-                                            allow_err!(peer.send(&msg).await);
+                                            allow_err!(peer.tcp_send_msg(&msg).await);
                                         } else {
                                             self.handler.override_file_confirm(
                                                 digest.id,
@@ -1095,7 +1095,7 @@ impl<T: InvokeUiSession> Remote<T> {
                                                     };
                                                     job.confirm(&req);
                                                     let msg = new_send_confirm(req);
-                                                    allow_err!(peer.send(&msg).await);
+                                                    allow_err!(peer.tcp_send_msg(&msg).await);
                                                 }
                                                 DigestCheckResult::NeedConfirm(digest) => {
                                                     if let Some(overwrite) = overwrite_strategy {
@@ -1111,7 +1111,7 @@ impl<T: InvokeUiSession> Remote<T> {
                                                         };
                                                         job.confirm(&req);
                                                         let msg = new_send_confirm(req);
-                                                        allow_err!(peer.send(&msg).await);
+                                                        allow_err!(peer.tcp_send_msg(&msg).await);
                                                     } else {
                                                         self.handler.override_file_confirm(
                                                             digest.id,
@@ -1131,7 +1131,7 @@ impl<T: InvokeUiSession> Remote<T> {
                                                     };
                                                     job.confirm(&req);
                                                     let msg = new_send_confirm(req);
-                                                    allow_err!(peer.send(&msg).await);
+                                                    allow_err!(peer.tcp_send_msg(&msg).await);
                                                 }
                                             },
                                             Err(err) => {

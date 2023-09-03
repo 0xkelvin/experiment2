@@ -80,7 +80,7 @@ fn new_socket(addr: std::net::SocketAddr, reuse: bool) -> Result<TcpSocket, std:
 }
 
 impl FramedStream {
-    pub async fn new<T: ToSocketAddrs + std::fmt::Display>(
+    pub async fn new_framedstream<T: ToSocketAddrs + std::fmt::Display>(
         remote_addr: T,
         local_addr: Option<SocketAddr>,
         ms_timeout: u64,
@@ -109,7 +109,7 @@ impl FramedStream {
         bail!(format!("Failed to connect to {remote_addr}"));
     }
 
-    pub async fn connect<'a, 't, P, T>(
+    pub async fn connect_tcp<'a, 't, P, T>(
         proxy: P,
         target: T,
         local_addr: Option<SocketAddr>,
@@ -183,7 +183,7 @@ impl FramedStream {
     }
 
     #[inline]
-    pub async fn send(&mut self, msg: &impl Message) -> ResultType<()> {
+    pub async fn tcp_send_msg(&mut self, msg: &impl Message) -> ResultType<()> {
         self.send_raw(msg.write_to_bytes()?).await
     }
 

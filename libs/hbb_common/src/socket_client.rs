@@ -107,7 +107,7 @@ pub async fn connect_tcp_local<
     ms_timeout: u64,
 ) -> ResultType<FramedStream> {
     if let Some(conf) = Config::get_socks() {
-        return FramedStream::connect(
+        return FramedStream::connect_tcp(
             conf.proxy.as_str(),
             target,
             local,
@@ -121,11 +121,11 @@ pub async fn connect_tcp_local<
         if let Some(local) = local {
             if local.is_ipv6() && target.is_ipv4() {
                 let target = query_nip_io(target).await?;
-                return FramedStream::new(target, Some(local), ms_timeout).await;
+                return FramedStream::new_framedstream(target, Some(local), ms_timeout).await;
             }
         }
     }
-    FramedStream::new(target, local, ms_timeout).await
+    FramedStream::new_framedstream(target, local, ms_timeout).await
 }
 
 #[inline]

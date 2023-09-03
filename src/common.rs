@@ -261,7 +261,7 @@ pub async fn send_opts_after_login(
         misc.set_option(opts);
         let mut msg_out = Message::new();
         msg_out.set_misc(misc);
-        allow_err!(peer.send(&msg_out).await);
+        allow_err!(peer.tcp_send_msg(&msg_out).await);
     }
 }
 
@@ -586,7 +586,7 @@ async fn test_nat_type_() -> ResultType<bool> {
                 socket.local_addr().ip().to_string(),
             );
         }
-        socket.send(&msg_out).await?;
+        socket.tcp_send_msg(&msg_out).await?;
         if let Some(msg_in) = get_next_nonkeyexchange_msg(&mut socket, None).await {
             if let Some(rendezvous_message::Union::TestNatResponse(tnr)) = msg_in.union {
                 log::info!("Got nat response from {}: port={}", server, tnr.port);
@@ -798,7 +798,7 @@ async fn check_software_update_() -> hbb_common::ResultType<()> {
         url: crate::VERSION.to_owned(),
         ..Default::default()
     });
-    socket.send(&msg_out, rendezvous_server).await?;
+    socket.send_uds_msg(&msg_out, rendezvous_server).await?;
     use hbb_common::protobuf::Message;
     for _ in 0..2 {
         if let Some(Ok((bytes, _))) = socket.next_timeout(READ_TIMEOUT).await {
